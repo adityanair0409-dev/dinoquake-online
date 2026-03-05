@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>DinoQuake Online</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<h1>DinoQuake Online</h1>
+
+<input id="name" placeholder="Your name">
+
+<br><br>
+
+<button onclick="createRoom()">Create Room</button>
+
+<br><br>
+
+<input id="room" placeholder="Room Code">
+
+<button onclick="joinRoom()">Join Room</button>
+
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+
+const socket = io();
+
+function createRoom(){
+
+const name=document.getElementById("name").value;
+
+socket.emit("createRoom",name);
+
+}
+
+socket.on("roomCreated",room=>{
+
+window.location=`game.html?room=${room}`;
+
+});
+
+function joinRoom(){
+
+const name=document.getElementById("name").value;
+
+const room=document.getElementById("room").value;
+
+socket.emit("joinRoom",{room,name});
+
+window.location=`game.html?room=${room}`;
+
+}
+
+</script>
+
+</body>
+</html>
