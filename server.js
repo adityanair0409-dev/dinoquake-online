@@ -1,85 +1,47 @@
 const express = require("express");
 const http = require("http");
-const { Server } = require("socket.io");
+const socketIO = require("socket.io");
+const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = socketIO(server);
 
-app.use(express.static("public"));
+const PORT = process.env.PORT || 3000;
 
-let rooms = {};
+// Serve static files
+app.use(express.static(path.join(__dirname, "public")));
 
-function roomCode(){
- return Math.random().toString(36).substring(2,6).toUpperCase();
-}
-
-io.on("connection", socket => {
-
- socket.on("createRoom", name => {
-
-   const code = roomCode();
-
-   rooms[code] = {
-     players:[{
-       id:socket.id,
-       name:name,
-       x:150,
-       y:300,
-       score:0
-     }]
-   };
-
-   socket.join(code);
-
-   socket.emit("roomCreated",code);
-
- });
-
- socket.on("joinRoom", ({room,name}) => {
-
-   if(!rooms[room] || rooms[room].players.length>=2){
-     socket.emit("joinError");
-     return;
-   }
-
-   rooms[room].players.push({
-     id:socket.id,
-     name:name,
-     x:600,
-     y:300,
-     score:0
-   });
-
-   socket.join(room);
-
-   io.to(room).emit("updatePlayers",rooms[room].players);
-
- });
-
- socket.on("move",({room,x,y})=>{
-
-   const player=rooms[room].players.find(p=>p.id===socket.id);
-
-   if(player){
-     player.x=x;
-     player.y=y;
-   }
-
-   io.to(room).emit("state",rooms[room].players);
-
- });
-
- socket.on("stomp",room=>{
-
-   const players=rooms[room].players;
-
-   players.forEach(p=>p.score+=5);
-
-   io.to(room).emit("quake",players);
-
- });
-
+// Open the game page
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/index.html"));
 });
 
-server.listen(3000,()=>console.log("Server running on port 3000"));
+let players = {};
+
+io.on("connection", (socket) => {
+  console.log("Player connected:", socket.id);
+
+  players[socket.id] = { x: 100, y: 100 };
+
+  socket.emit("currentPlayers", players);
+  socket.broadcast.emit("newPlayer", { id: socket.id, player: players[socket.id] });
+
+  socket.on("move", (data) => {
+    if (players[socket.id]) {
+      players[socket.id].x = data.x;
+      players[socket.id].y = data.y;
+      io.emit("playerMoved", { id: socket.id, player: players[socket.id] });
+    }
+  });
+
+  socket.on("disconnect", () => {
+    console.log("Player disconnected:", socket.id);
+    delete players[socket.id];
+    io.emit("playerDisconnected", socket.id);
+  });
+});
+
+server.listen(PORT, () => {
+  console.log("Server running on port", PORT);
+});
