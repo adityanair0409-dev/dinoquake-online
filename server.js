@@ -24,16 +24,17 @@ io.on("connection", (socket) => {
 
   players[socket.id] = { x: 100, y: 100 };
 
-  socket.emit("currentPlayers", players);
+  socket.emit("state", Object.values(players));
   socket.broadcast.emit("newPlayer", { id: socket.id, player: players[socket.id] });
 
-  socket.on("move", (data) => {
-    if (players[socket.id]) {
-      players[socket.id].x = data.x;
-      players[socket.id].y = data.y;
-      io.emit("playerMoved", { id: socket.id, player: players[socket.id] });
-    }
-  });
+ socket.on("move", (data) => {
+  if (players[socket.id]) {
+    players[socket.id].x = data.x;
+    players[socket.id].y = data.y;
+
+    io.emit("state", Object.values(players));
+  }
+});
 
   socket.on("disconnect", () => {
     console.log("Player disconnected:", socket.id);
