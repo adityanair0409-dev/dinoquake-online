@@ -22,7 +22,12 @@ let players = {};
 io.on("connection", (socket) => {
   console.log("Player connected:", socket.id);
 
-  players[socket.id] = { x: 100, y: 100 };
+  players[socket.id] = {
+  x: 100,
+  y: 100,
+  name: "Player",
+  score: 0
+};
 
   socket.emit("state", Object.values(players));
   socket.broadcast.emit("newPlayer", { id: socket.id, player: players[socket.id] });
