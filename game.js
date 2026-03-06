@@ -6,6 +6,7 @@ const ctx=canvas.getContext("2d");
 const params=new URLSearchParams(window.location.search);
 
 const room=params.get("room");
+socket.emit("joinGame", room);
 
 document.getElementById("roomCode").innerText="Room: "+room;
 
